@@ -43,11 +43,11 @@ export function node<A>(id: TwoCharId, data: A): FNode<A> {
   }
 }
 
-export function add_node<A, B>(node: FNode<A> | FRoot<A, B>, child: FNode<A>) {
+export function add_node<A>(node: FHasChildren<A>, child: FNode<A>) {
   node.children.push(child)
 }
 
-export function add_nodes<A, B>(node: FNode<A> | FRoot<A, B>, children: Array<FNode<A>>) {
+export function add_nodes<A>(node: FHasChildren<A>, children: Array<FNode<A>>) {
   children.forEach(_ => node.children.push(_))
 }
 
@@ -71,9 +71,13 @@ export function add_node_at<A, B>(node: FNode<A> | FRoot<A, B>, path: Path, chil
   update_at(node, path, _ => _.children.push(child))
 }
 
-export function climb_with_root<A, B>(root_value: B, root: FNode<A>, fn: (root: B, child: A, max_depth: number) => B) {
-  let root_next = fn(root_value, root.data, max_depth(root))
-  root.children.forEach(_ => climb_with_root(root_next, _, fn))
+export function climb_with_root<A, B>(root: FRoot<A, B>, fn: (root: B, child: A, max_depth: number) => B) {
+  function helper(root_value: B, child: FNode<A>) {
+    let next = fn(root_value, child.data, max_depth(child))
+
+    child.children.forEach(_ => helper(next, _))
+  }
+  root.children.forEach(_ => helper(root.data, _))
 }
 
 export function max_depth<A>(root: FNode<A>): number {

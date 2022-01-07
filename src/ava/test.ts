@@ -1,6 +1,7 @@
 import test from 'ava';
 
 import {
+  FRoot,
   root,
   node,
   at_path,
@@ -9,10 +10,12 @@ import {
   add_node_at,
   pretty } from '../types'
 
+import {
+  climb_with_root } from '../types'
 
 test('pretty', t => {
 
-  let _root = root('root'),
+  let _root: FRoot<string, string> = root('root'),
     a1 = node('a1', 'hello'),
     b1 = node('b1', 'world'),
     c1 = node('c1', 'good'),
@@ -38,5 +41,17 @@ test('pretty', t => {
   t.truthy(res)
 
   t.is(res.data, 'hope')
+
+
+  climb_with_root(_root, 
+    (sit: string, 
+      child: string,
+      max_depth: number) => {
+
+        let res = sit + child + max_depth
+        console.log(res)
+        return res
+  })
+
 
 });

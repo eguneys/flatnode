@@ -2,8 +2,8 @@
 
 Manipulate a tree with paths of nodes.
 
-- Update nodes with a path. `fnode_update_at`
-- Pretty print tree.`fnode_pretty`
+- Update nodes with a path. `update_at`
+- Pretty print tree.`pretty`
 
 ```
  root
@@ -23,32 +23,34 @@ Manipulate a tree with paths of nodes.
 
 import * as fnode from 'flatnode'
 
-let { fnode_pretty,
-  fnode_add_nodes,
-  make_fnode } = fnode
+let { pretty,
+  add_nodes,
+  add_node,
+  root,
+  node } = fnode
 
-let root = fnode_add_nodes(
-    make_fnode('', 'root'),
-    fnode_add_nodes(
-      make_fnode('a1', 'hello'), 
-      fnode_add_nodes(
-        fnode_add_nodes(
-          make_fnode('b1', 'world'),
-          make_fnode('c1', 'good')),
-        fnode_add_nodes(
-          make_fnode('b2', 'world'),
-          make_fnode('c2', 'good')),
-        fnode_add_nodes(
-          make_fnode('b3', 'see'),
-          make_fnode('c3', 'hear')),
-        )
-      )
-    )
 
-console.log(fnode_pretty(root));
+  let _root = root('root'),
+    a1 = node('a1', 'hello'),
+    b1 = node('b1', 'world'),
+    c1 = node('c1', 'good'),
+    b2 = node('b2', 'world'),
+    c2 = node('c2', 'good'),
+    b3 = node('b3', 'see'),
+    c3 = node('c3', 'hear')
 
-fnode_add_node_at(root, 'a1b1b2c2',
-    make_fnode('d1', 'hope'))
+
+  add_node(_root, a1)
+  add_nodes(a1, [b1, b2, b3])
+  add_node(b1, c1)
+  add_node(b2, c2)
+  add_node(b3, c3)
+
+  console.log(pretty(_root))
+
+
+  add_node_at(root, 'a1b2c2',
+      make_fnode('d1', 'hope'))
 
 ```
 

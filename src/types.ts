@@ -3,11 +3,21 @@ export type TwoCharId = string
 // "TwoCharIdTwoCharId"
 export type Path = string
 
-export type FNode<A> = {
-  id: TwoCharId,
-  data: A,
+export type FHasChildren<A> = {
   children: Array<FNode<A>>
 }
+
+export type FHasData<A> = {
+  data: A
+}
+
+export type FRoot<A, B> = FHasData<B> & FHasChildren<A> & {
+}
+
+export type FNode<A> = FHasData<A> & FHasChildren<A> & {
+  id: TwoCharId,
+}
+
 
 export function path_head(path: Path) {
   return path.slice(0, 2)
@@ -17,8 +27,15 @@ export function path_tail(path: Path) {
   return path.slice(2)
 }
 
+export function root<A, B>(data: B): FRoot<A, B> {
+  return {
+    data,
+    children: []
+  }
+}
 
-export function make_fnode<A>(id: TwoCharId, data: A): FNode<A> {
+
+export function node<A>(id: TwoCharId, data: A): FNode<A> {
   return {
     id,
     data,
@@ -26,24 +43,22 @@ export function make_fnode<A>(id: TwoCharId, data: A): FNode<A> {
   }
 }
 
-export function fnode_add_node<A>(node: FNode<A>, child: FNode<A>) {
+export function add_node<A, B>(node: FNode<A> | FRoot<A, B>, child: FNode<A>) {
   node.children.push(child)
-  return node
 }
 
-export function fnode_add_nodes<A>(node: FNode<A>, ...children: Array<FNode<A>>) {
+export function add_nodes<A, B>(node: FNode<A> | FRoot<A, B>, children: Array<FNode<A>>) {
   children.forEach(_ => node.children.push(_))
-  return node
 }
 
-export function fnode_at_path<A>(node: FNode<A>, path: Path): FNode<A> | undefined {
+export function at_path<A, B>(node: FNode<A> | FRoot<A, B>, path: Path): FRoot<A, B> | FNode<A> | undefined {
   if (path === '') return node
   let child = node.children.find(_ => _.id === path_head(path))
-  return child ? fnode_at_path(child, path_tail(path)) : undefined
+  return child ? at_path<A, B>(child, path_tail(path)) : undefined
 }
 
-export function fnode_update_at<A>(node: FNode<A>, path: Path, fn: (_: FNode<A>) => void) {
-  let _node = fnode_at_path(node, path)
+export function update_at<A, B>(node: FNode<A> | FRoot<A, B>, path: Path, fn: (_: FNode<A> | FRoot<A, B>) => void) {
+  let _node = at_path<A, B>(node, path)
   if (_node) {
     fn(_node)
     return _node
@@ -51,10 +66,24 @@ export function fnode_update_at<A>(node: FNode<A>, path: Path, fn: (_: FNode<A>)
   return
 }
 
-export function fnode_add_node_at<A>(node: FNode<A>, path: Path, child: FNode<A>) {
-  let newPath = path + node.id
-  fnode_update_at(node, path, _ => _.children.push(child))
+export function add_node_at<A, B>(node: FNode<A> | FRoot<A, B>, path: Path, child: FNode<A>) {
+  let newPath = path + ("id" in node ? node.id: '')
+  update_at(node, path, _ => _.children.push(child))
 }
+
+export function climb_with_root<A, B>(root_value: B, root: FNode<A>, fn: (root: B, child: A, max_depth: number) => B) {
+  let root_next = fn(root_value, root.data, max_depth(root))
+  root.children.forEach(_ => climb_with_root(root_next, _, fn))
+}
+
+export function max_depth<A>(root: FNode<A>): number {
+  if (root.children[0]) {
+    return 1 + max_depth(root.children[0])
+  } else {
+    return 0
+  }
+}
+
 
 export const fid = (_: any) => _
 
@@ -78,10 +107,10 @@ beep
   └── party
       time!
 */
-export function fnode_pretty<A>(node: FNode<A>, fna: (a: A) => string = fid) {
+export function pretty<A, B>(node: FRoot<A, B>, fna: (a: A | B) => string = fid) {
 
-  function helper(prefix: string, node: FNode<A>): string {
-    let label = node.id + ' ' + fna(node.data)
+  function helper(prefix: string, node: FRoot<A, B> | FNode<A>): string {
+    let label = ("id" in node ? node.id: '') + ' ' + fna(node.data)
 
     let nodes = node.children
     return prefix + label + '\n' +
@@ -95,7 +124,6 @@ export function fnode_pretty<A>(node: FNode<A>, fna: (a: A) => string = fid) {
           (more ? '┬' : '─') + ' ' +
           helper(_prefix, node).slice(prefix.length + 2)
       }).join('')
-
   }
   return helper('', node)
 }
